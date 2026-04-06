@@ -1,0 +1,398 @@
+================================================================================
+  SafeO — HACKATHON-WINNING PITCH SCRIPT (ppt.txt)
+  Position: Real-time security layer inside ERP (not a generic WAF)
+================================================================================
+Format per slide: Content → Speaker Notes → Visual Suggestion
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE 1 — Title
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Content:
+  SafeO
+  The missing trust layer inside your ERP
+
+  Real-time decisions before data hits your database — built for Odoo + FastAPI.
+
+Speaker Notes:
+  Open with one line: “ERP runs the business. SafeO checks every door before it opens.”
+  Pause. “We’re not selling a firewall at the network edge. We score CRM, finance, and HR actions where real users actually work.”
+  End slide: “Everything you’ll see is demo-ready on your laptop.”
+
+Visual Suggestion:
+  Split: Odoo form on one side, ALLOW / WARN / BLOCK badge on the other. Clean, no jargon on screen.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE 2 — The problem (numbers that stick)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Content:
+  When security fails, the bill is real
+
+  • Average cost of a data breach: about **$4.4 million**
+  • Average time to **find** a breach: **200–250 days** (often quoted around 207)
+  • **30%+** of attacks involve **web applications** — where ERPs live
+  • **300,000+** new malware samples **per day** — lists can’t keep up
+
+  Your ERP is a web app with forms, money, and people data.
+  One bad field or one odd export can become a headline.
+
+Speaker Notes:
+  “These aren’t scare quotes — they’re the numbers judges hear in every security talk. Own them.”
+  Emphasis: “Two hundred days before anyone notices. The damage is already in the database.”
+  Punchline: “SafeO’s job is to shrink that window to **seconds**, at the moment someone hits Save.”
+
+Visual Suggestion:
+  Four big stats in a grid ($4.4M, 200–250 days, 30%+, 300K+/day). One line under: “ERP = web + data + money.”
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE 3 — Why ERP systems are vulnerable
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Content:
+  ERP isn’t “just internal software”
+
+  • **Free-text everywhere** — lead notes, payment memos, comments on orders
+  • **Many real users** — staff, partners, sometimes the public on website forms
+  • **High value in one place** — customers, payroll, suppliers, contracts
+  • **Fast changes** — custom modules and forms without a security review each time
+
+  Attackers don’t need to “hack the server” first.
+  They often test **what the app accepts** — the same place your team works every day.
+
+Speaker Notes:
+  “Think like an attacker for ten seconds: where is the data worth stealing? In the ERP.”
+  “Firewalls protect the building. They don’t read what someone typed into a CRM note.”
+  Punchline: “The vulnerability is **ordinary screens** used by **actual users** — that’s what we protect.”
+
+Visual Suggestion:
+  Simple diagram: User → Browser → ERP screens (CRM / Finance / HR) → Database. Highlight “screens” in orange.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE 4 — The gap (what happens in practice)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Content:
+  Today’s tools often stop at the wrong layer
+
+  • **Edge / network tools** — great for DDoS, not for “is this CRM text safe?”
+  • **Generic WAF** — pattern lists, **little business context** (CRM vs payment vs HR)
+  • **Logs and SIEM** — you learn **after** something was saved or exported
+  • **Access rights** — control **who** can open a record, not **what** they put in it
+
+  Missing piece: a **decision at save time** with **ERP context** and a **clear trail**.
+
+Speaker Notes:
+  “Here’s the key issue — security often stops at the server, but the risky part keeps going **inside the app**.”
+  “Teams ask: who changed what? We add: **should this input have been allowed at all?**”
+  Pause. “SafeO fills that gap **before** the row is written.”
+
+Visual Suggestion:
+  Stack picture: Network layer (check) vs Application / form layer (empty red box) → label the red box “SafeO”.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE 5 — Real scenario (then SafeO)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Content:
+  Without SafeO — a story that happens in real systems
+
+  1. A user submits a **CRM web form** with hidden junk in the “message” field (injection-style payload).
+  2. Odoo **stores it** like any other lead — looks harmless in the list view.
+  3. Later: a report, integration, or admin screen **touches that field** → odd errors, data exposure, or a ticket storm.
+  4. Mean time to notice: think **weeks or months** — not seconds.
+
+  **With SafeO**
+  • Same submit → engine scores the text **before** create.
+  • **BLOCK** → user sees an error; **nothing** persisted.
+  • **WARN** → saved only if you want review paths; decision **logged** on `safeo.erp.decision`.
+  • Audit trail: **who, what module, score, reason** — inside Odoo.
+
+Speaker Notes:
+  “Walk them through slowly — ‘stored like normal’ is what makes people nervous.”
+  “Then flip: with SafeO, that line **never becomes a row**.”
+  Punchline: “We’re not promising magic — we’re stopping the **first bad write**.”
+
+Visual Suggestion:
+  Two panels: LEFT “Before” (form → green check → DB with skull icon). RIGHT “After” (form → SafeO gate → red STOP → empty DB). Keep it literal, not cute.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE 6 — SafeO — the solution
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Content:
+  One sentence
+
+  **SafeO is a real-time risk engine that sits inside Odoo and scores actions before they commit.**
+
+  What you get
+  • Scores **0–100** and decisions **ALLOW / WARN / BLOCK**
+  • Works on **CRM, finance notes, employee actions, website posts** (where you wire it)
+  • **FastAPI** service your Odoo module calls — **Swagger at /docs**
+  • **Native Odoo log** — decisions as normal records, not a mystery export
+
+  Honest scope: you still **patch Odoo**; we add **inline judgment** and **proof**.
+
+Speaker Notes:
+  “If you remember one slide: **score before commit**, **proof in Odoo**.”
+  “We’re complementary to Odoo security fixes — we handle **what users type** and **how they behave**.”
+  Tone: confident, not defensive — “We know our lane.”
+
+Visual Suggestion:
+  Single hero diagram: Odoo ↔ SafeO API ↔ ALLOW/WARN/BLOCK → same arrow to “Decision log” icon.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE 7 — How it works (simple flow)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Content:
+  Seven steps — easy to say on stage
+
+  1. User does something in Odoo (form save, POST, etc.).
+  2. **ir.http** path (our module extends Odoo — **no core edits**) sees the request.
+  3. Payload summarized and sent to the engine (**/erp/crm/lead**, **/erp/finance/action**, etc.).
+  4. **Input checks** — injection, XSS-style patterns, risky text.
+  5. **Behavior signal** — “is this normal for this user?” (where enabled).
+  6. **Network hint** — optional **safe / risky** boost for demos and future feeds.
+  7. Odoo gets **ALLOW / WARN / BLOCK**; **BLOCK** stops the save; events hit **metrics + dashboard**.
+
+Speaker Notes:
+  “Don’t read all seven — point at the middle: **score in the API**, **enforce in Odoo**.”
+  “Judges care: **inherit**, not **fork** — we stayed inside Odoo’s extension model.”
+  Optional line: “Latency target: **tens of milliseconds** for the fast path — your form still feels normal.”
+
+Visual Suggestion:
+  Horizontal swimlane: User | Odoo addon | FastAPI | Back to Odoo. Numbers 1–7 as small footnote or presenter-only.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE 8 — SafeO in ERP systems (hackathon themes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Content:
+  Three ways ERP shows up — we map to all three
+
+  **Business, finance & workforce ERP** *(primary fit)*
+  • CRM leads and partner notes scanned before save  
+  • Finance actions (payments, approvals, memos) scored  
+  • Employee-style actions monitored for **odd patterns**  
+
+  **Operational & industrial ERP**
+  • Purchase / procurement text and operational posts covered by the same pipeline  
+  • **Global monitor** on risky POSTs for “something weird happened in the app”  
+  • Supply-chain free text = same risk as CRM if nobody checks it  
+
+  **Public & institutional ERP**
+  • **Website / portal** submissions (where installed) before they land in the DB  
+  • **Login / auth** events auditable in the ERP trail  
+  • Decisions stored so **public-sector admins** can **show their work**  
+
+Speaker Notes:
+  “This slide is for the judges’ rubric — map **their** words to **our** screens.”
+  “Say it plainly: **business**, **operations**, **citizen-facing** — one engine, three audiences.”
+  Punchline: “We didn’t pick one theme and ignore the rest.”
+
+Visual Suggestion:
+  Three columns with icons (briefcase / factory / building). Bullet 2–3 each. Highlight primary column subtly.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE 8A — From Risk → Action (Jira integration)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Content:
+  **From Risk → Action**
+
+  🚫 **BLOCKED ACTION**
+
+  • **Module:** CRM  
+  • **Risk Score:** 91  
+  • **Reason:** Injection  
+
+  **→ Jira Ticket Created**  
+  • **Status:** Open  
+  • **Assigned:** Security Team  
+
+  One line for judges: high-risk **BLOCK** rows in Odoo can **open a Jira issue automatically** when you add URL + API token in Settings — so SecOps gets a ticket, not just a log line.
+
+Speaker Notes:
+  “This is the ‘so what’ slide for operations teams.”
+  “SafeO already stops the save; Jira is how **Security** gets a **work item** with the same facts.”
+  “If Jira isn’t configured in the demo, say: **the hook is in the module** — we show the story on the dashboard either way.”
+
+Visual Suggestion:
+  Same layout as the dashboard card: left column = block facts, big arrow, right column = Jira fields. Optional tiny Jira logo (fair use / your brand).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE 9 — Traditional WAF vs SafeO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Content:
+  Clean comparison
+
+  | | Typical WAF (edge) | SafeO (inside ERP) |
+  |---|---|---|
+  | **Where it runs** | Network / perimeter | **Application / form save** |
+  | **Context** | URL + raw body | **Module + route + user story** |
+  | **Behavior** | Usually none | **Baseline + anomaly** where enabled |
+  | **Outcome** | Block HTTP | **Block or flag the business action** |
+  | **Proof for auditors** | Web logs | **Native ERP decision records** |
+
+  Together: edge tools + SafeO is a sane stack — we’re the **inside** half.
+
+Speaker Notes:
+  “We’re not trashing WAFs — they’re supposed to be at the edge.”
+  “We’re saying: **ERP needs a second line** that understands **what screen** this is.”
+  Punchline: “Network vs application. **No context vs context-aware. No behavior vs behavior-aware.**”
+
+Visual Suggestion:
+  Two-column table as above. Green checkmarks on SafeO column only if you want; or neutral checks on both for “stack” story.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE 10 — Smarts without burning money (tiered intelligence)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Content:
+  Fast path first — expensive help only when it matters
+
+  • **Tiered intelligence** — cheap checks always on; **LLM / heavy models only** when uncertainty is high or on a **sample** of traffic  
+  • **Goal** — cut API spend: think **large drop** in LLM calls vs “always on” (measure in **your** pilot; we show **LLM skipped** on the dashboard)  
+  • **Explainable output** — patterns + short reason, not a silent fail  
+  • **Policies** — UAE / EU / US / Global style thresholds so **block/warn** matches how strict you need to be  
+  • **Dashboard** — `/metrics`, `/erp/dashboard/summary`, OWL **Business Risk** view — **block rate**, **risk mix**, **recent decisions**
+
+Speaker Notes:
+  “Judges worry about ‘AI cost’ — answer before they ask.”
+  “We’re optimized for **most traffic cheap**, **edge cases smart**.”
+  One-liner: “You get **signal**, not **surprise bills**.”
+
+Visual Suggestion:
+  Funnel graphic: “100% requests” → wide band “fast rules” → thin band “LLM / deep check”. Label dashboard tile “LLM calls avoided”.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE 11 — Live demo (2–3 minutes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Content:
+  Run this order — each step is one sentence
+
+  1. **Swagger** — `http://localhost:8001/docs` — show `/erp/...` exists.  
+  2. **CRM** — malicious lead text → **BLOCK**, high score (curl or Odoo form).  
+  3. **Finance** — risky note on a payment → **WARN** / review story.  
+  4. **Employee activity** — odd action string → behavior + text score.  
+  5. **Network signal** — flip **risky** → scores jump (demo hook).  
+  6. **Dashboard** — metrics + decision list — “here’s the proof.”  
+  7. **Attack Lab / simulate** — batch patterns; show **detection rate** honestly.
+
+Speaker Notes:
+  “Never apologize for localhost — say **reproducible in minutes**.”
+  “If one step fails, skip to **Swagger + one curl** — judges remember **one clean spike**.”
+  Close demo: “That row **never existed** — that’s the product.”
+
+Visual Suggestion:
+  Checklist on slide; live split screen terminal + Odoo + dashboard screenshot as backup image.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE 12 — Impact (bring the numbers back)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Content:
+  Why this matters in money and time
+
+  • **~$4.4M** — average breach cost; stopping one serious incident pays for years of attention  
+  • **200–250 days** — typical detection lag; SafeO aims at **seconds-at-save**, not **months-in-logs**  
+  • **30%+** web-app attack share — ERP is in that bucket  
+  • **300,000+** malware/day — automation beats manual review; we **automate the first gate**  
+
+  Pilot metrics (how you’ll measure honestly)
+  • % of bad inputs **blocked before persistence**  
+  • **LLM calls per 1k requests** before vs after gating  
+  • Time to **show an auditor** a decision trail (minutes, not weeks)
+
+Speaker Notes:
+  “Loop back to slide 2 — same numbers, **now with our answer**.”
+  “We’re not claiming we prevent every breach; we **remove a whole class** of ‘stored poison’ problems.”
+  Strong close to slide: “Cheaper than **one** bad quarter of incident response.”
+
+Visual Suggestion:
+  Left column repeat 4 stats; right column “SafeO response” one line each (block at save, trail in ERP, etc.).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE 13 — What’s next (short, realistic)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Content:
+  Near-term
+  • Tighter **LLM gating** + **cache** for repeated probes  
+  • Richer **per-user baselines** from real audit history  
+  • Partner-ready **export pack** for security reviews  
+
+  Later
+  • More **vertical packs** (manufacturing notes, helpdesk, grants)  
+  • Optional **mobile / chat alerts** for BLOCK events  
+
+Speaker Notes:
+  “Roadmap slide should feel **grounded** — two bullets each max.”
+  “Invite partners: ‘If you maintain Odoo for clients, this is **your** differentiator.’”
+
+Visual Suggestion:
+  Simple timeline arrow; no buzzwords in the graphic text.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SLIDE 14 — Closing
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Content:
+  **ERP systems manage everything — but they trust everything.  
+  SafeO adds the missing layer of trust.**
+
+  SafeO — security that **runs inside Odoo**, with numbers you can cite and a demo you can run today.
+
+  Q&A anchors
+  • Scope = **this deployment**  
+  • We complement **patches and edge tools**  
+  • Heavy claims → **show the log line** in Odoo
+
+Speaker Notes:
+  Deliver the closing line **slowly**, then **stop** for one beat.
+  “If they remember one thing: **trust at save time**.”
+  Optional mic-drop (quiet): “**Four point four million** reasons to care; **one** module to try.”
+
+Visual Suggestion:
+  Full-bleed dark slide; white text; only the closing line + SafeO wordmark. No bullets.
+
+
+================================================================================
+  APPENDIX — Presenter cheat sheet (optional last page / handout)
+================================================================================
+
+Numbers to repeat:
+  $4.4M  |  200–250 day detection  |  30%+ web apps  |  300K+ malware/day
+
+One-liner differentiation:
+  Network vs application · No context vs context-aware · No behavior vs behavior-aware
+
+Demo URLs:
+  API docs: http://127.0.0.1:8001/docs
+  Odoo:     http://localhost:8069  (with SafeO module installed)
+
+Sample curl (CRM):
+  curl -s -X POST http://127.0.0.1:8001/erp/crm/lead -H "Content-Type: application/json" \
+    -d '{"name":"Demo","message":"DROP TABLE crm_lead; --","source":"web","user_id":"demo"}'
+
+================================================================================
+  END — SafeO hackathon pitch script
+================================================================================
