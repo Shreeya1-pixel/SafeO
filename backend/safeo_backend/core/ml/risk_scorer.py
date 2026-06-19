@@ -22,8 +22,12 @@ Additional guardrails (preserved from original design):
 """
 
 from urllib.parse import unquote, unquote_plus
-from typing import List, Tuple
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple
 
+from ...agents.multilingual_agent import get_multilingual_agent
+from .drift_detector import get_drift_detector, make_feature_vector
+from .temporal_scorer import score as temporal_score
 from .entropy import (
     shannon_entropy,
     character_distribution_anomaly,
@@ -99,26 +103,44 @@ def _ds_noisy_or(*beliefs: float) -> float:
     return round(1.0 - product, 4)
 
 
-def calculate_risk_score(text: str) -> Tuple[float, str, List[str], List[str]]:
+def calculate_risk_score(
+    text: str,
+    user_id: str = "anonymous",
+    behavioural_risk: float = 0.0,
+    timestamp: Optional[datetime] = None,
+) -> Tuple[float, str, List[str], List[str], Dict[str, Any]]:
     """
     Fuse all ML evidence layers into a single 0-1 risk score.
 
-    Returns: (risk_score, decision, detected_patterns, explanation_parts)
-    API contract is identical to the original — callers are unaffected.
+    Returns:
+        risk_score, decision, detected_patterns, explanation_parts, metadata
+        metadata includes script_detected and evasion_suspected from MultilingualAgent.
     """
+    meta: Dict[str, Any] = {
+        "script_detected": "latin",
+        "evasion_suspected": False,
+        "evasion_confidence": 0.0,
+    }
     if not text or not text.strip():
-        return 0.0, "allow", [], ["Empty input — no risk detected"]
+        return 0.0, "allow", [], ["Empty input — no risk detected"], meta
 
-    decoded_text = _iterative_decode(text)
+    ml_agent = get_multilingual_agent()
+    ml_result = ml_agent.analyse(text)
+    meta["script_detected"] = ml_result.get("script_detected", "latin")
+    meta["evasion_suspected"] = bool(ml_result.get("evasion_suspected"))
+    meta["evasion_confidence"] = float(ml_result.get("confidence", 0.0))
+
+    scoring_text = ml_result.get("normalised") or text
+    decoded_text = _iterative_decode(scoring_text)
 
     # ── Layer 1: Structural anomaly signals ──────────────────────────────────
-    entropy_val      = shannon_entropy(text)
-    char_anomaly     = character_distribution_anomaly(text)
-    repetition       = repetition_score(text)
-    compress         = compression_anomaly(text)
-    burst            = token_burst_score(text)
-    bigram_entropy   = bigram_markov_entropy(text)
-    pos_conc         = positional_concentration(text)
+    entropy_val      = shannon_entropy(scoring_text)
+    char_anomaly     = character_distribution_anomaly(scoring_text)
+    repetition       = repetition_score(scoring_text)
+    compress         = compression_anomaly(scoring_text)
+    burst            = token_burst_score(scoring_text)
+    bigram_entropy   = bigram_markov_entropy(scoring_text)
+    pos_conc         = positional_concentration(scoring_text)
 
     structural = _structural_signal(
         entropy_val, char_anomaly, repetition, compress,
@@ -126,7 +148,7 @@ def calculate_risk_score(text: str) -> Tuple[float, str, List[str], List[str]]:
     )
 
     # ── Layer 2: Keyword / regex pattern matching ─────────────────────────────
-    categories, keyword_score, patterns = detect_threats(text)
+    categories, keyword_score, patterns = detect_threats(scoring_text)
 
     # Re-run on URL-decoded form to catch obfuscated payloads.
     decoded_categories, decoded_keyword_score, decoded_patterns = detect_threats(decoded_text)
@@ -136,14 +158,41 @@ def calculate_risk_score(text: str) -> Tuple[float, str, List[str], List[str]]:
     keyword_signal = max(keyword_score, decoded_keyword_score)
 
     # ── Layer 3: N-gram cosine similarity to attack corpus ───────────────────
-    ngram_score, ngram_families = ngram_attack_similarity(text)
+    ngram_score, ngram_families = ngram_attack_similarity(scoring_text)
     # Also check decoded form; take the stronger signal.
-    if decoded_text != text:
+    if decoded_text != scoring_text:
         decoded_ngram_score, _ = ngram_attack_similarity(decoded_text)
         ngram_score = max(ngram_score, decoded_ngram_score)
 
-    # ── Dempster-Shafer Noisy-OR fusion ──────────────────────────────────────
-    score = _ds_noisy_or(keyword_signal, structural, ngram_score)
+    evasion_signal = 0.0
+    if meta["evasion_suspected"]:
+        evasion_signal = min(0.55 + meta["evasion_confidence"] * 0.4, 0.95)
+        patterns.append(f"multilingual_evasion:{ml_result.get('method', 'heuristic')}")
+
+    # ── Temporal risk boost ───────────────────────────────────────────────────
+    ts = timestamp or datetime.now(timezone.utc)
+    temporal = temporal_score(user_id, "", ts)
+    temporal_boost = temporal.get("temporal_risk_boost", 0.0)
+    meta["temporal_signals"] = temporal.get("signals_fired", [])
+    meta["temporal_boost"] = temporal_boost
+
+    # ── Dempster-Shafer Noisy-OR fusion (core signals) ────────────────────────
+    score = _ds_noisy_or(keyword_signal, structural, ngram_score, evasion_signal)
+
+    # ── Behavioural risk addition (weight 0.15, other sources scale 0.85) ────
+    beh_contribution = min(behavioural_risk, 1.0) * 0.15
+    score = round(min(score * 0.85 + beh_contribution + temporal_boost, 1.0), 4)
+
+    # ── Drift detector update ─────────────────────────────────────────────────
+    try:
+        hour = ts.hour
+        feat_vec = make_feature_vector(
+            meta["script_detected"], entropy_val,
+            categories, len(scoring_text), hour,
+        )
+        get_drift_detector().update(feat_vec)
+    except Exception:
+        pass
 
     # ── Composite attack chain boost (multi-category co-occurrence) ───────────
     if len(categories) > 1:
@@ -182,8 +231,19 @@ def calculate_risk_score(text: str) -> Tuple[float, str, List[str], List[str]]:
         explanations.append(f"Compression anomaly ({compress:.2f}) — machine-generated payload")
     if burst > 0.45:
         explanations.append(f"Delimiter/operator burst ({burst:.2f}) — exploit grammar detected")
-    if decoded_text != text and decoded_patterns:
+    if decoded_text != scoring_text and decoded_patterns:
         explanations.append("Encoded payload unfolded into known malicious signatures")
+    if meta["evasion_suspected"]:
+        explanations.append(
+            f"Multilingual evasion suspected ({meta['script_detected']}, "
+            f"confidence {meta['evasion_confidence']:.2f})"
+        )
+    if behavioural_risk >= 0.40:
+        explanations.append(f"Behavioural anomaly signal ({behavioural_risk:.2f})")
+    if temporal_boost > 0:
+        explanations.append(
+            f"Temporal risk boost (+{temporal_boost:.2f}): {', '.join(meta['temporal_signals'])}"
+        )
     if not explanations:
         explanations.append("Input appears safe — all evidence layers clear")
 
@@ -196,4 +256,4 @@ def calculate_risk_score(text: str) -> Tuple[float, str, List[str], List[str]]:
     else:
         decision = "allow"
 
-    return risk_score, decision, patterns, explanations
+    return risk_score, decision, patterns, explanations, meta

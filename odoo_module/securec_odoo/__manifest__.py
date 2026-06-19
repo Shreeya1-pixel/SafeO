@@ -9,7 +9,7 @@
     # and employee activity before they are committed to the database.
     # ─────────────────────────────────────────────────────────────────────────
     'name': 'SafeO — ERP Risk Decision Engine',
-    'version': '19.0.7.0.0',
+    'version': '19.0.9.0.2',
 
     # Maps to the hackathon's "Business, Finance and Workforce ERP" track.
     # Judges use this field to route submissions to the correct reviewers.
@@ -76,6 +76,7 @@ Architecture
         # Views — order matters: models referenced in menus must exist first
         'views/securec_policy_views.xml',
         'views/securec_log_views.xml',
+        'views/investigation_views.xml',
         'views/securec_audit_views.xml',
         'views/erp_decision_views.xml',          # new ERP-native decision log
         'views/securec_dashboard_views.xml',

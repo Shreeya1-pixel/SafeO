@@ -56,6 +56,7 @@ class BehaviorResponse(BaseModel):
     explanation: str
     action_count: int
     baseline_avg: float
+    behavioural_risk_score: float = 0.0
 
 
 class SimulateRequest(BaseModel):

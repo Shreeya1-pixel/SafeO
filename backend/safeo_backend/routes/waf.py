@@ -39,6 +39,8 @@ def get_request_log():
 
 def append_request_log(entry: Dict[str, Any]) -> None:
     """Shared logging hook so ERP-native routes can feed dashboard metrics."""
+    if "source_system" not in entry:
+        entry["source_system"] = "odoo"
     _request_log.append(entry)
 
 
@@ -108,7 +110,7 @@ async def analyze_input(req: WAFInputRequest):
             engine_note="decision_cache_hit",
         )
 
-    risk_score, decision, patterns, explanations = calculate_risk_score(req.input_text)
+    risk_score, decision, patterns, explanations, _meta = calculate_risk_score(req.input_text)
     llm_used = False
     engine_note = ""
     if llm_enabled():

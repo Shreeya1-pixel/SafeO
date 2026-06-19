@@ -73,6 +73,17 @@
                         </setting>
                     </block>
 
+                    <block title="AMD / Local LLM">
+                        <setting string="AMD GPU Acceleration"
+                                 help="Enable AMD ROCm GPU acceleration for tier-2 and tier-3 models">
+                            <field name="amd_gpu_enabled"/>
+                        </setting>
+                        <setting string="Local LLM URL"
+                                 help="vLLM OpenAI-compatible endpoint (default http://localhost:8000/v1)">
+                            <field name="local_llm_url"/>
+                        </setting>
+                    </block>
+
                     <block title="Region &amp; Compliance Policy">
                         <setting string="Active Compliance Policy"
                                  help="Select a regional policy (UAE, EU, US, Global) to govern block thresholds, PII masking, and logging requirements. Overrides the global block threshold above.">

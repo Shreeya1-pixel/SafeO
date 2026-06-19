@@ -1263,3 +1263,169 @@
 .safeo-dashboard-light .safeo-scope-item {
     background: #f9fafb !important;
 }
+
+.safeo-drift-banner {
+    background: #fef2f2;
+    border: 1px solid #dc2626;
+    color: #991b1b;
+    padding: 10px 16px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.safeo-gpu-panel { margin-bottom: 16px; }
+.safeo-gpu-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+.safeo-gpu-bar { flex: 1; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+.safeo-gpu-fill { height: 100%; background: #E8202A; }
+.safeo-gpu-meta { display: flex; gap: 16px; font-size: 12px; color: #6b7280; flex-wrap: wrap; }
+.mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12px; }
+.tier-badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+.tier-t1 { background: #dbeafe; color: #1e40af; }
+.tier-t2 { background: #fef3c7; color: #92400e; }
+.tier-llm { background: #fee2e2; color: #991b1b; }
+.tier-pipeline { display: flex; align-items: center; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
+.tier-box { padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 12px; background: #f3f4f6; color: #9ca3af; }
+.tier-box.active { background: #dcfce7; border-color: #16a34a; color: #166534; font-weight: 600; }
+.tier-box.skipped { opacity: 0.5; }
+.safeo-tier-pipeline { display: flex; align-items: center; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
+.safeo-inv-row { display: flex; gap: 16px; padding: 10px; border-bottom: 1px solid #e5e7eb; cursor: pointer; align-items: center; }
+.safeo-inv-row:hover { background: #f9fafb; }
+.safeo-inv-row-open { background: #f0f9ff; border-left: 3px solid #E8202A; }
+.safeo-inv-chevron { color: #6b7280; font-size: 10px; width: 14px; flex-shrink: 0; }
+.safeo-inv-hint { font-size: 12px; color: #6b7280; margin: 0 0 12px; }
+.safeo-inv-detail { padding: 12px 16px; background: #f8fafc; border-left: 3px solid #E8202A; margin-bottom: 8px; font-size: 13px; }
+.safeo-code { font-size: 11px; background: #1f2937; color: #e5e7eb; padding: 10px; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; }
+.safeo-lab-select { margin-left: 8px; padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db; }
+.safeo-mode-strip { display: flex; gap: 12px; font-size: 12px; margin-right: 12px; flex-wrap: wrap; }
+.safeo-mode-ok { color: #16a34a; font-weight: 600; }
+.safeo-mode-grey { color: #6b7280; font-weight: 600; }
+.safeo-mode-toggle { margin-bottom: 8px; }
+.safeo-inject-result { margin: 12px 0; padding: 12px; font-size: 13px; }
+
+/* Agent Investigation chat panel (Tab 3 only) */
+.safeo-agent-chat {
+    margin-top: 16px;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+}
+.safeo-agent-chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+.safeo-agent-chat-header h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2937;
+}
+.safeo-agent-chat-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #6b7280;
+}
+.safeo-agent-dot-live,
+.safeo-agent-dot-idle {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.safeo-agent-dot-live {
+    background: #22c55e;
+    animation: safeo-agent-pulse 1.4s ease-in-out infinite;
+}
+.safeo-agent-dot-idle {
+    background: #9ca3af;
+}
+@keyframes safeo-agent-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+}
+.safeo-agent-chat-messages {
+    height: 380px;
+    overflow-y: auto;
+    padding: 12px 14px;
+    background: #ffffff;
+}
+.safeo-agent-chat-unavailable,
+.safeo-agent-chat-closed {
+    padding: 12px 14px;
+    font-size: 12px;
+    color: #6b7280;
+    background: #ffffff;
+}
+.safeo-agent-msg-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.safeo-agent-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+.safeo-agent-avatar-ml { background: #60a5fa; }
+.safeo-agent-avatar-pa { background: #34d399; }
+.safeo-agent-avatar-fa { background: #f59e0b; }
+.safeo-agent-avatar-ra { background: #f87171; }
+.safeo-agent-msg-body { flex: 1; min-width: 0; }
+.safeo-agent-msg-meta {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    margin-bottom: 4px;
+}
+.safeo-agent-msg-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+}
+.safeo-agent-msg-time {
+    font-size: 10px;
+    color: #9ca3af;
+}
+.safeo-agent-msg-content {
+    font-size: 13px;
+    color: #1f2937;
+    line-height: 1.45;
+    word-break: break-word;
+}
+.safeo-agent-msg-warning { color: #b45309; }
+.safeo-agent-msg-critical { color: #b91c1c; }
+.safeo-agent-msg-done { color: #374151; }
+.safeo-agent-meta-toggle {
+    margin-top: 6px;
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+}
+.safeo-agent-meta-json {
+    margin: 6px 0 0;
+    padding: 8px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 10px;
+    color: #374151;
+    overflow-x: auto;
+    white-space: pre-wrap;
+}

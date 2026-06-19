@@ -49,6 +49,23 @@ class SafeOLog(models.Model):
     policy_decision_reason = fields.Char('Policy Decision Reason',
         help='Human-readable reason for the adjusted decision (e.g. Blocked due to UAE policy).')
 
+    # ── ML pipeline signals (from FastAPI backend) ─────────────────────────
+    script_detected = fields.Char('Script Detected', readonly=True)
+    evasion_suspected = fields.Boolean('Evasion Suspected', default=False)
+    tier_used = fields.Selection([
+        ('1', 'Tier 1 — Heuristic'),
+        ('2', 'Tier 2 — distilBERT'),
+        ('llm', 'Tier 3 — Local LLM'),
+    ], string='ML Tier Used')
+    behavioural_risk_score = fields.Float('Behavioural Risk Score', digits=(3, 2))
+    temporal_signals = fields.Text('Temporal Signals (JSON)')
+    investigation_id = fields.Char('Investigation ID')
+    investigation_verdict = fields.Selection([
+        ('pending', 'Pending'),
+        ('cleared', 'Cleared'),
+        ('confirmed', 'Confirmed Block'),
+    ], string='Investigation Verdict')
+
     @api.depends('input_text')
     def _compute_preview(self):
         for rec in self:

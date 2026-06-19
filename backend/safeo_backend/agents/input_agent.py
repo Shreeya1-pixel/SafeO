@@ -9,7 +9,7 @@ class InputAgent:
     description = "Primary input analysis agent — ML + rule-based threat detection"
 
     def analyze(self, text: str, context: Dict[str, Any] = {}) -> AgentResult:
-        risk_score, decision, patterns, _ = calculate_risk_score(text)
+        risk_score, decision, patterns, _, _meta = calculate_risk_score(text)
         confidence = min(0.70 + len(patterns) * 0.05 + min(len(text) / 500, 0.10), 1.0)
         return AgentResult(
             agent_name=self.name,

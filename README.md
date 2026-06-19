@@ -35,7 +35,7 @@ Full diagram: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - **Dashboard** feed: metrics, logs, per-module drill-down (OWL)
 - **Decision lab** + **simulation** endpoints for scripted demos
 - **Audit / decision** models stored in Odoo for reviewer queries
-- Optional **LLM augmentation** (OpenRouter) — off by default
+- Optional **tier-3 LLM** via **local vLLM** (Mistral-7B on AMD ROCm) — no cloud API key
 
 ---
 
@@ -75,7 +75,7 @@ cd SafeO/backend
 python3.11 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env        # optional: enable LLM keys
+cp .env.example .env        # optional: local vLLM URL (no cloud API key)
 export PYTHONPATH="$(pwd)"
 uvicorn safeo_backend.main:app --host 127.0.0.1 --port 8001 --reload
 ```

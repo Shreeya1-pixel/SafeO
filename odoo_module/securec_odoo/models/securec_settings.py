@@ -99,6 +99,17 @@ class ResConfigSettings(models.TransientModel):
         default='SEC',
     )
 
+    amd_gpu_enabled = fields.Boolean(
+        string='AMD GPU Acceleration',
+        config_parameter='securec.amd_gpu_enabled',
+        default=True,
+    )
+    local_llm_url = fields.Char(
+        string='Local LLM URL',
+        config_parameter='securec.local_llm_url',
+        default='http://localhost:8000/v1',
+    )
+
     # ── Region & Policy ────────────────────────────────────────────────
     securec_active_policy_id = fields.Many2one(
         'securec.policy',

@@ -50,6 +50,10 @@ def _api_url():
     )
 
 
+def _api_auth_headers():
+    return {'Authorization': 'Bearer internal', 'Content-Type': 'application/json'}
+
+
 def _active_policy_id():
     """Resolve effective policy: session override first, then global config."""
     sid = request.session.get('securec_active_policy_id')
@@ -672,6 +676,176 @@ class SafeOController(http.Controller):
         except Exception as e:
             _logger.exception("SafeO: attack_lab_run unhandled error — %s", e)
             return {'error': f"Scan failed: {e}"}
+
+    @http.route(['/safeo/ml/full_stats'], type='jsonrpc', auth='user', methods=['POST'])
+    def ml_full_stats(self, **kwargs):
+        try:
+            resp = requests.get(f"{_api_url()}/ml/full-stats", headers=_api_auth_headers(), timeout=4)
+            if resp.status_code == 200:
+                return resp.json()
+        except Exception as e:
+            _logger.warning("SafeO: full-stats unreachable — %s", e)
+        return {}
+
+    @http.route(['/safeo/ml/gpu_stats'], type='jsonrpc', auth='user', methods=['POST'])
+    def ml_gpu_stats(self, **kwargs):
+        try:
+            resp = requests.get(f"{_api_url()}/ml/gpu-stats", headers=_api_auth_headers(), timeout=4)
+            if resp.status_code == 200:
+                return resp.json()
+        except Exception as e:
+            _logger.warning("SafeO: gpu-stats unreachable — %s", e)
+        return {}
+
+    @http.route(['/safeo/ml/model_health'], type='jsonrpc', auth='user', methods=['POST'])
+    def ml_model_health(self, **kwargs):
+        try:
+            resp = requests.get(f"{_api_url()}/ml/model-health", headers=_api_auth_headers(), timeout=4)
+            if resp.status_code == 200:
+                return resp.json()
+        except Exception as e:
+            _logger.warning("SafeO: model-health unreachable — %s", e)
+        return {}
+
+    @http.route(['/safeo/investigations/list'], type='jsonrpc', auth='user', methods=['POST'])
+    def investigations_list(self, **kwargs):
+        try:
+            resp = requests.get(f"{_api_url()}/investigations", headers=_api_auth_headers(), timeout=4)
+            if resp.status_code == 200:
+                return {'investigations': resp.json()}
+        except Exception as e:
+            _logger.warning("SafeO: investigations list unreachable — %s", e)
+        return {'investigations': []}
+
+    @http.route(['/safeo/investigations/detail'], type='jsonrpc', auth='user', methods=['POST'])
+    def investigations_detail(self, scan_id='', **kwargs):
+        if not scan_id:
+            return {'error': 'scan_id required'}
+        try:
+            resp = requests.get(
+                f"{_api_url()}/investigations/{scan_id}",
+                headers=_api_auth_headers(),
+                timeout=4,
+            )
+            if resp.status_code == 200:
+                return resp.json()
+        except Exception as e:
+            _logger.warning("SafeO: investigation detail unreachable — %s", e)
+        return {'error': 'not found'}
+
+    @http.route(['/safeo/investigations/approve'], type='jsonrpc', auth='user', methods=['POST'])
+    def investigations_approve(self, scan_id='', reviewer='', **kwargs):
+        try:
+            resp = requests.post(
+                f"{_api_url()}/investigations/{scan_id}/approve",
+                headers=_api_auth_headers(),
+                json={'reviewer': reviewer or request.env.user.login},
+                timeout=4,
+            )
+            return resp.json() if resp.ok else {'error': resp.text}
+        except Exception as e:
+            return {'error': str(e)}
+
+    @http.route(['/safeo/investigations/reject'], type='jsonrpc', auth='user', methods=['POST'])
+    def investigations_reject(self, scan_id='', reviewer='', reason='', **kwargs):
+        try:
+            resp = requests.post(
+                f"{_api_url()}/investigations/{scan_id}/reject",
+                headers=_api_auth_headers(),
+                json={
+                    'reviewer': reviewer or request.env.user.login,
+                    'reason': reason or 'Rejected by reviewer',
+                },
+                timeout=4,
+            )
+            return resp.json() if resp.ok else {'error': resp.text}
+        except Exception as e:
+            return {'error': str(e)}
+
+    @http.route(['/safeo/v1/scan'], type='jsonrpc', auth='user', methods=['POST'])
+    def v1_scan(self, input_text='', source_system='Odoo', user_id=None, **kwargs):
+        payload = (input_text or '').strip()
+        if not payload:
+            return {'error': 'Payload cannot be empty'}
+        try:
+            resp = requests.post(
+                f"{_api_url()}/v1/scan",
+                headers=_api_auth_headers(),
+                json={
+                    'input': payload,
+                    'context': {
+                        'user_id': str(user_id or request.env.user.id),
+                        'source_system': source_system or 'Odoo',
+                    },
+                },
+                timeout=15,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                try:
+                    tier = data.get('tier_used')
+                    tier_key = 'llm' if tier == 3 else str(tier) if tier else False
+                    dec = (data.get('decision') or 'allow').lower()
+                    request.env['securec.log'].sudo().create({
+                        'input_text': payload[:1000],
+                        'risk_score': float(data.get('risk_score', 0)),
+                        'decision': dec if dec in ('allow', 'warn', 'block') else 'allow',
+                        'explanation': ' | '.join(data.get('explanations') or [])[:500],
+                        'detected_patterns': ', '.join(data.get('matched_patterns') or []),
+                        'module': source_system or 'API',
+                        'user_id': request.env.user.id,
+                        'script_detected': data.get('script_detected'),
+                        'evasion_suspected': bool(data.get('evasion_suspected')),
+                        'tier_used': tier_key,
+                        'behavioural_risk_score': float(data.get('behavioural_risk_score') or 0),
+                        'investigation_id': data.get('scan_id') if dec == 'block' else False,
+                        'investigation_verdict': 'pending' if dec == 'block' else False,
+                    })
+                except Exception as exc:
+                    _logger.debug("SafeO: v1_scan log write skipped — %s", exc)
+                return data
+            return {'error': resp.text[:300]}
+        except Exception as e:
+            return {'error': str(e)}
+
+    @http.route(['/safeo/demo_inject'], type='jsonrpc', auth='user', methods=['POST'])
+    def demo_inject(self, payload='', field='description', **kwargs):
+        """
+        Demo helper: create a CRM lead with the sandbox payload so judges see
+        Odoo's native risk hook fire without manual CRM typing.
+        """
+        from odoo.exceptions import UserError
+
+        text = (payload or '').strip()
+        if not text:
+            return {'error': 'payload cannot be empty'}
+
+        field = field if field in ('description', 'name', 'email') else 'description'
+        if field == 'name':
+            vals = {'name': text[:200], 'description': 'SafeO sandbox inject (name field)'}
+        elif field == 'email':
+            vals = {'name': 'SafeO Demo Lead', 'email_from': text[:200], 'description': text[:500]}
+        else:
+            vals = {'name': 'SafeO Demo Lead', 'description': text[:2000]}
+
+        Lead = request.env['crm.lead']
+        try:
+            lead = Lead.create(vals)
+            return {
+                'lead_id': lead.id,
+                'decision': lead.securec_decision or 'allow',
+                'risk_score': float(lead.securec_risk_score or 0.0),
+            }
+        except UserError as exc:
+            return {
+                'lead_id': None,
+                'decision': 'block',
+                'risk_score': 1.0,
+                'error': str(exc),
+            }
+        except Exception as exc:
+            _logger.warning("SafeO: demo_inject failed — %s", exc)
+            return {'error': str(exc)}
 
     # ── Internal helpers ──────────────────────────────────────────────────
 

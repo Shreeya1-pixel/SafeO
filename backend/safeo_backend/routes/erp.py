@@ -3,13 +3,14 @@ ERP-native HTTP API: transactions, HR activity, CRM lead gate, finance actions,
 dashboard summary, and mock network signal. Each handler calls `calculate_risk_score`
 and appends to the shared log via `routes.waf.append_request_log` for dashboard metrics.
 """
+import asyncio
 import uuid
 import time
 import random
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 
-from fastapi import APIRouter
+from fastapi import APIRouter, BackgroundTasks
 
 from ..core.ml.risk_scorer import calculate_risk_score
 from ..agents.behavior_agent import BehaviorAgent
@@ -128,6 +129,25 @@ def _build_reason(patterns, categories, explanation_parts, module, network_signa
     return base[:320]
 
 
+async def _fire_investigation(rid: str, text: str, score: float, decision: str,
+                             patterns: list, meta: dict, user_id: str) -> None:
+    """Background investigation — triggered on BLOCK decisions."""
+    from ..agents.investigation_room import run_investigation
+    try:
+        await run_investigation(
+            scan_id=rid,
+            payload=text,
+            risk_score=score,
+            decision=decision,
+            patterns=patterns,
+            meta=meta,
+            context={"user_id": user_id, "jurisdiction": "Global"},
+        )
+    except Exception as exc:
+        import logging
+        logging.getLogger("safeo.erp").warning("investigation failed for %s: %s", rid, exc)
+
+
 def _evaluate_erp_text(
     *,
     text: str,
@@ -140,7 +160,7 @@ def _evaluate_erp_text(
     rid = str(uuid.uuid4())[:8]
     net_signal = network_context or _get_network_signal()
     boost = _network_boost(net_signal)
-    raw_score, _, patterns, explanations = calculate_risk_score(text)
+    raw_score, _, patterns, explanations, _meta = calculate_risk_score(text, user_id=user_id or "anonymous")
     final_score = round(min(raw_score + boost, 1.0), 3)
     decision = _erp_decision(final_score)
     impact = _erp_impact(decision, transaction_type)
@@ -156,6 +176,17 @@ def _evaluate_erp_text(
         network_signal=net_signal,
         impact=impact,
     )
+
+    # Fire background investigation for BLOCK decisions
+    if decision == "BLOCK":
+        try:
+            loop = asyncio.get_event_loop()
+            loop.create_task(
+                _fire_investigation(rid, text, final_score, decision, patterns, _meta, user_id or "anonymous")
+            )
+        except RuntimeError:
+            pass  # no event loop in sync context — investigation skipped
+
     return ERPDecisionResponse(
         request_id=rid,
         risk_score=round(final_score * 100),
@@ -207,7 +238,7 @@ async def analyze_employee_activity(req: EmployeeActivityRequest):
     boost = _network_boost(net_signal)
 
     # Run the action text through the risk scorer for malicious intent
-    text_score, _, patterns, explanations = calculate_risk_score(req.action)
+    text_score, _, patterns, explanations, _meta = calculate_risk_score(req.action, user_id=req.employee_id)
 
     # Run through behavior agent for anomaly detection
     behavior = _behavior_agent.track_action(req.employee_id, req.action)

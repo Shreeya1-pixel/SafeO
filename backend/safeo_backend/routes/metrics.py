@@ -2,9 +2,12 @@
 from fastapi import APIRouter
 from collections import defaultdict
 from ..models.schemas import MetricsResponse
+from ..agents.multilingual_agent import MultilingualAgent
 from .waf import get_request_log, get_engine_stats
 
 router = APIRouter(prefix="/metrics", tags=["Business Risk Dashboard"])
+agents_router = APIRouter(prefix="/agents", tags=["Agents"])
+ml_router = APIRouter(prefix="/ml", tags=["ML Internals"])
 
 # Map raw module names to ERP module labels
 _ERP_MODULE_MAP = {
@@ -124,3 +127,112 @@ def _demo_metrics() -> MetricsResponse:
         recent_decisions=recent_decisions,
         network_risk_events=3,
     )
+
+
+@agents_router.get("/multilingual/stats")
+async def multilingual_agent_stats():
+    """Rolling multilingual agent telemetry (last 1000 samples in-process)."""
+    return MultilingualAgent.get_stats()
+
+
+@agents_router.get("/behaviour/{user_id}")
+async def user_behaviour_fingerprint(user_id: str):
+    """Per-user behavioural fingerprint profile."""
+    from ..agents.behavior_agent import get_user_fingerprint
+    return get_user_fingerprint(user_id)
+
+
+@ml_router.get("/tier-stats")
+async def tier_stats():
+    """Tier decision counters (tier1/2/3 calls + LLM-savings %)."""
+    from ..utils.tier_stats import get_stats
+    return get_stats()
+
+
+@ml_router.get("/drift-status")
+async def drift_status():
+    """PSI drift detector status: drift_detected, psi_scores, alert_count."""
+    from ..core.ml.drift_detector import get_drift_detector
+    return get_drift_detector().status()
+
+
+@ml_router.get("/temporal-stats")
+async def temporal_stats():
+    """Temporal signal fired distribution."""
+    from ..core.ml.temporal_scorer import get_temporal_stats
+    return get_temporal_stats()
+
+
+@ml_router.get("/retraining-log")
+async def retraining_log():
+    """Last 20 retraining events from the active feedback loop."""
+    from ..core.ml.retraining_loop import get_retraining_log
+    return {"events": get_retraining_log(20)}
+
+
+@ml_router.get("/model-health")
+async def model_health():
+    """Model health: error rates, retraining count, LLM savings."""
+    from ..core.ml.retraining_loop import get_model_health
+    return get_model_health()
+
+
+@ml_router.get("/gpu-stats")
+async def gpu_stats():
+    """AMD GPU memory, utilisation, and inference counters."""
+    from ..utils.gpu_monitor import get_gpu_stats
+    return get_gpu_stats()
+
+
+@ml_router.get("/full-stats")
+async def full_stats():
+    """Single aggregated endpoint for demo dashboard polling."""
+    from ..utils.tier_stats import get_stats as tier_stats
+    from ..utils.gpu_monitor import get_gpu_stats
+    from ..core.ml.drift_detector import get_drift_detector
+    from ..core.ml.retraining_loop import get_model_health
+    from ..core.ml.temporal_scorer import get_temporal_stats
+    from ..agents.investigation_room import get_investigations
+
+    logs = get_request_log()
+    total = len(logs)
+    blocked = sum(1 for l in logs if _normalized_decision(l.get("decision")) == "block")
+    avg_risk = round(sum(l.get("risk_score", 0) for l in logs) / total, 3) if total else 0.0
+    tier = tier_stats()
+
+    investigations = get_investigations(100)
+    active_inv = sum(
+        1 for inv in investigations
+        if inv.get("human_required") and inv.get("approved") is None
+    )
+
+    recent_decisions = [
+        {
+            "time": l.get("timestamp") or "",
+            "request_id": l.get("request_id", ""),
+            "source_system": l.get("source_system", l.get("module", "odoo")),
+            "script_detected": l.get("script_detected", "latin"),
+            "tier_used": l.get("tier_used", 1),
+            "risk_score": l.get("risk_score", 0),
+            "decision": _normalized_decision(l.get("decision")).upper(),
+            "user_id": l.get("user_id", ""),
+        }
+        for l in reversed(logs[-20:])
+    ]
+
+    return {
+        "summary": {
+            "total_scans": total,
+            "blocked": blocked,
+            "llm_calls_saved_pct": tier.get("llm_savings_pct", 0.0),
+            "avg_score": avg_risk,
+            "active_investigations": active_inv,
+        },
+        "tier_stats": tier,
+        "gpu_stats": get_gpu_stats(),
+        "drift_status": get_drift_detector().status(),
+        "model_health": get_model_health(),
+        "multilingual_stats": MultilingualAgent.get_stats(),
+        "temporal_stats": get_temporal_stats(),
+        "recent_decisions": recent_decisions,
+    }

@@ -47,7 +47,7 @@ async def simulate_attack(req: SimulateRequest):
 
     for attack_type in types:
         for payload in PAYLOADS.get(attack_type, []):
-            risk, decision, patterns, explanations = calculate_risk_score(payload)
+            risk, decision, patterns, explanations, _meta = calculate_risk_score(payload)
             results.append(SimulationResult(
                 attack_type=attack_type,
                 payload=payload[:90] + ("..." if len(payload) > 90 else ""),
