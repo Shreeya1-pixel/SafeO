@@ -8,6 +8,17 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from .ws_broadcaster import broadcaster
+from ..agents.band_bridge import band_post
+
+
+def agent_name_to_key(agent_name: str) -> str:
+    mapping = {
+        "MultilingualAgent": "multilingual",
+        "PolicyAgent": "policy",
+        "ForensicsAgent": "forensics",
+        "RemediationAgent": "remediation",
+    }
+    return mapping.get(agent_name, "multilingual")
 
 
 def _build_message(
@@ -38,6 +49,17 @@ async def agent_post(
         return
     message = _build_message(scan_id, agent_name, content, status, metadata or {})
     await broadcaster.broadcast(scan_id, message)
+
+    # Mirror to Band (non-blocking, fails silently if Band not configured)
+    asyncio.create_task(
+        band_post(
+            agent_key=agent_name_to_key(agent_name),
+            scan_id=scan_id,
+            content=content,
+            status=status,
+            metadata=metadata or {},
+        )
+    )
 
 
 def schedule_agent_post(

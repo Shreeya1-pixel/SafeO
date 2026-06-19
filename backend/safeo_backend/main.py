@@ -8,6 +8,7 @@ and CORS. The ASGI app is exposed as `app` for:
 
 Upstream consumers: Odoo module (JSON-RPC proxy + website monitor), curl demos, Swagger at /docs.
 """
+import asyncio
 import logging
 
 from fastapi import FastAPI
@@ -96,6 +97,12 @@ def _startup_summary() -> None:
     except Exception:
         pass
 
+    from .agents.band_bridge import BAND_ENABLED, _band_agents
+    if BAND_ENABLED:
+        band_status = f"enabled, {len(_band_agents)} agents connected"
+    else:
+        band_status = "disabled (set BAND_ENABLED=true to enable)"
+
     lines = [
         "",
         "╔══════════════════════════════════════════════════════╗",
@@ -106,6 +113,7 @@ def _startup_summary() -> None:
         f"║  vLLM server          : {vllm_status:<28} ║",
         f"║  Tier 2 model         : {tier2_status:<28} ║",
         f"║  Multilingual model   : {ml_status:<28} ║",
+        f"║  Band                 : {band_status[:28]:<28} ║",
         "║  SafeO ready on port  : 8001                         ║",
         "╚══════════════════════════════════════════════════════╝",
         "",
@@ -123,6 +131,9 @@ async def on_startup():
         register_model("arabert-multilingual")
     except Exception:
         pass
+    from .agents.band_bridge import BAND_ENABLED, _init_band_agents
+    if BAND_ENABLED:
+        asyncio.create_task(_init_band_agents())
     _startup_summary()
 
 

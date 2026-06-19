@@ -144,3 +144,29 @@ Open Sandbox tab → paste payload → **Run Live Scan** → full tier pipeline,
 | Dashboard offline | Check `securec.api_url` = `http://127.0.0.1:8001` |
 | vLLM unreachable | Tier 3 skipped; tiers 1–2 still work |
 | CRM inject blocked | Expected for malicious payloads — check BLOCK toast |
+
+---
+
+## Band Setup (required for Band of Agents Hackathon)
+
+1. Go to https://band.ai → sign up free (no credit card needed)
+2. Go to **Agents → New Agent → External Agent**
+3. Create 4 agents: **SafeO-Multilingual**, **SafeO-Policy**, **SafeO-Forensics**, **SafeO-Remediation**
+4. For each agent: copy the `agent_id` and `api_key` shown after creation
+5. Copy `.env.example` to `backend/.env` and fill in all 8 `BAND_*` values
+6. Set `BAND_ENABLED=true` in your `.env`
+7. Restart the FastAPI backend — look for **Band: X agents connected** in startup logs
+
+**To run WITHOUT Band** (still works, just no Band integration):
+
+```bash
+BAND_ENABLED=false   # default — no env vars needed
+```
+
+**What judges see in Band:**
+
+- 4 registered agents appear in Band's agent directory
+- When a BLOCK event triggers an investigation, all 4 agents post their findings into Band in sequence
+- The Band conversation thread = the audit trail
+
+Verify Band status: `GET http://127.0.0.1:8001/v1/health` → `band_enabled`, `band_agents_connected`

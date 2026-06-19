@@ -192,6 +192,11 @@ async def v1_health():
     except Exception:
         pass
 
+    from ..agents.band_bridge import BAND_ENABLED, _band_agents
+    if BAND_ENABLED and not _band_agents:
+        from ..agents.band_bridge import _init_band_agents
+        asyncio.create_task(_init_band_agents())
+
     return {
         "status": "ok",
         "gpu_available": gpu_available,
@@ -199,6 +204,8 @@ async def v1_health():
         "tier2_loaded": tier2_loaded,
         "multilingual_model_loaded": ml_loaded,
         "uptime_seconds": round(time.time() - _START_TIME, 1),
+        "band_enabled": BAND_ENABLED,
+        "band_agents_connected": len(_band_agents),
     }
 
 
